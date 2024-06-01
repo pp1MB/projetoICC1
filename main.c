@@ -24,30 +24,34 @@ typedef struct{
     int qtdAssentos;
     float valEco;
     float valExe;
+    char data[11];
+    char numero[5];
+    char origem[4];
+    char destino[4];
 } voo;
 
 // Estrutura para informações do passageiro.
 typedef struct{
     char *nome;
     char *sobrenome;
-    char *cpf;
-    char assento[2];
+    char cpf[15];
+    char assento[4];
     bool classe;
 } passageiros;
 
 void *alocarMemoria(int size_vet, int size_type);
 
 voo aberturaVoo(void);
-passageiros realizarReserva(void);
+passageiros realizarReserva(voo *v, int n_passageiros);
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
-void modificarReserva(void);
+void modificarReserva(passageiros *p, int n_passageiros);
 void cancelarReserva(void);
 void fechamentoDia(void);
 void fechamentoVoo(void);
 
 int main(void){
-    char inputComando[2]; 
-    int n_passageiro = 0;
+    char inputComando[3]; 
+    int n_passageiros = 0;
     voo viagem; // Eu juro que não sei um nome de variável decente, será que pode usar "voo voo" ???
     passageiros *passageiro;
 
@@ -61,12 +65,16 @@ int main(void){
         }
 
         if(strcmp(inputComando, "RR") == 0){
-            passageiro[n_passageiro] = realizarReserva();
-            n_passageiro++;
+            passageiro[n_passageiros] = realizarReserva(&viagem, n_passageiros);
+            n_passageiros++;
         }
 
         if(strcmp(inputComando, "CR") == 0){
-            consultarReserva(passageiro, viagem, n_passageiro);
+            consultarReserva(passageiro, viagem, n_passageiros);
+        }
+
+        if(strcmp(inputComando, "MR") == 0){
+            modificarReserva(passageiro, n_passageiros);
         }
     }
 
@@ -87,6 +95,8 @@ void *alocarMemoria(int size_vet, int size_type){
     vet = malloc(size_vet * size_type);
 
     assert(vet != NULL); // Crashar o programa parece ser meio drástico, podemos trabalhar melhor nisso.
+
+    return vet;
 }
 
 voo aberturaVoo(void){
@@ -99,35 +109,68 @@ voo aberturaVoo(void){
     return v;
 }
 
-passageiros realizarReserva(void){
+passageiros realizarReserva(voo *v, int n_passageiros){
     passageiros p;
     char input[200]; // 200 é suficiente?
 
     // Não sei se é melhor separar uma string pra nome e outra pra sobrenome ou fazer uma lógica para pular o primeiro espaço e armazenar tudo em uma string.
     scanf(" %[^\n]s", input);
 
+    // Nome
     char *token = strtok(input, " ");
-    p.nome = (char *) alocarMemoria(strlen(token)+1, sizeof(char));
+    p.nome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
     strcpy(p.nome, token);
-    printf("%s", p.nome);
 
+    // Sobrennome
     token = strtok(NULL, " ");
-    p.sobrenome = (char *) alocarMemoria(strlen(token)+1, sizeof(char));
+    p.sobrenome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
     strcpy(p.sobrenome, token);
-    printf("%s", p.sobrenome);
 
+    // CPF
     token = strtok(NULL, " ");
-    p.cpf = (char *) alocarMemoria(strlen(token)+1, sizeof(char));
-    strcpy(p.cpf, token);
-    printf("%s", p.cpf);
+    strncpy(p.cpf, token, 14);
+    p.cpf[14] = '\0';
 
+    // Data (salva uma única vez)
+    for(int i=0; i < 3; i++) {
+        token = strtok(NULL, " ");
+        
+        if(n_passageiros == 0){
+            strcat((*v).data, token);
+            if (i < 2) 
+                strcat((*v).data, "/");
+        }
+
+    }
+    (*v).data[11] = '\0';
+
+    // Número Voo (salva uma única vez)
     token = strtok(NULL, " ");
-    strcpy(p.assento, token);
-    printf("%s", p.assento);
+    if(n_passageiros == 0){
+        strncpy((*v).numero, token, 4);
+        (*v).numero[4] = '\0';
+    }
 
+    // Assento
+    token = strtok(NULL, " ");
+    strncpy(p.assento, token, 3);
+    p.assento[3] = '\0';
+
+    // Classe
     token = strtok(NULL, " ");
     if(strcmp(token, "economica") == 0) p.classe = false;
     if(strcmp(token, "executiva") == 0) p.classe = true;
+
+    // Valor (não salva)
+    token = strtok(NULL, " ");
+
+    // Origem e Destino (salva uma única vez)
+    if(n_passageiros == 0){
+        token = strtok(NULL, " ");
+        strcpy((*v).origem, token);
+        token = strtok(NULL, " ");
+        strcpy((*v).destino, token);
+    }
 
     return p;
 }
@@ -145,11 +188,11 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros){
             // Printar Nome e Sobrenome
             printf("%s %s\n", p[i].nome, p[i].sobrenome);
 
-            // Printar data (?)
-            printf("XX/XX/XXXX\n");
+            // Printar data
+            printf("%s\n", v.data);
 
-            // Printar voo (?)
-            printf("Voo:\n");
+            // Printar numero voo
+            printf("Voo: %s\n", v.numero);
 
             // Printar assento
             printf("Assento: %s\n", p[i].assento);
@@ -157,15 +200,57 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros){
             // Printar classe e valor baseado no booleano .classe (1=Executiva e 0=Econômica)
             if(p[i].classe){
                 printf("Classe: executiva\n");
-                printf("Trecho: \n");
-                printf("Valor: %f", v.valExe);
+                printf("Trecho: %s %s\n", v.origem, v.destino);
+                printf("Valor: %.2f", v.valExe);
             } else {
                 printf("Classe: econômica\n");
-                printf("Trecho: \n");
-                printf("Valor: %f", v.valEco);
+                printf("Trecho: %s %s\n", v.origem, v.destino);
+                printf("Valor: %.2f", v.valEco);
             }
         }
     }
 
     return;
 }
+
+void modificarReserva(passageiros *p, int n_passageiros){
+    char input[100];
+    passageiros temp;
+
+    scanf("%s", input);
+
+    char *token = strtok(input, " ");
+    temp.nome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
+    strcpy(temp.nome, token);
+
+    token = strtok(input, " ");
+    temp.sobrenome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
+    strcpy(temp.sobrenome, token);
+
+    token = strtok(input, " ");
+    strcpy(temp.cpf, token);
+
+    token = strtok(input, " ");
+    strcpy(temp.assento, token);
+
+    for(int i=0; i<n_passageiros; i++){
+        if(strcmp(p[i].nome, temp.nome) == 0 || strcmp(p[i].sobrenome, temp.sobrenome) == 0 || strcmp(p[i].cpf, temp.cpf) == 0 || strcmp(p[i].assento, temp.assento) == 0){
+            // Todos os dados são reatribuídos.
+            strcpy(p[i].nome, temp.nome);
+            strcpy(p[i].sobrenome, temp.sobrenome);
+            strcpy(p[i].cpf, temp.cpf);
+            strcpy(p[i].assento, temp.assento);
+            printf("%s", p[i].assento);
+        }
+    }
+
+    // Colocar uma função para printar;
+
+}
+
+
+/* Casos testes
+AV 200 1200.00 2500.00
+RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
+MR Carlos Massa 555.555.333-99 A30
+*/
