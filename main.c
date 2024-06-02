@@ -25,7 +25,7 @@ typedef struct{
     float valEco;
     float valExe;
     char data[11];
-    char numero[5];
+    char *numero;
     char origem[4];
     char destino[4];
 } voo;
@@ -44,10 +44,12 @@ void *alocarMemoria(int size_vet, int size_type);
 voo aberturaVoo(void);
 passageiros realizarReserva(voo *v, int n_passageiros);
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
-void modificarReserva(passageiros *p, int n_passageiros);
+void modificarReserva(passageiros *p, voo v, int n_passageiros);
 void cancelarReserva(void);
 void fechamentoDia(void);
 void fechamentoVoo(void);
+
+void printarReserva(passageiros p, voo v);
 
 int main(void){
     char inputComando[3]; 
@@ -74,7 +76,7 @@ int main(void){
         }
 
         if(strcmp(inputComando, "MR") == 0){
-            modificarReserva(passageiro, n_passageiros);
+            modificarReserva(passageiro, viagem, n_passageiros);
         }
     }
 
@@ -147,8 +149,8 @@ passageiros realizarReserva(voo *v, int n_passageiros){
     // Número Voo (salva uma única vez)
     token = strtok(NULL, " ");
     if(n_passageiros == 0){
-        strncpy((*v).numero, token, 4);
-        (*v).numero[4] = '\0';
+        (*v).numero = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
+        strcpy((*v).numero, token);
     }
 
     // Assento
@@ -180,57 +182,31 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros){
     
     scanf("%s", checkCPF);
 
-    for(int i=0; i<n_passageiros; i++){
-        if(strcmp(p[i].cpf, checkCPF) == 0){
-            // Printar CPF
-            printf("%s\n", p[i].cpf);
-
-            // Printar Nome e Sobrenome
-            printf("%s %s\n", p[i].nome, p[i].sobrenome);
-
-            // Printar data
-            printf("%s\n", v.data);
-
-            // Printar numero voo
-            printf("Voo: %s\n", v.numero);
-
-            // Printar assento
-            printf("Assento: %s\n", p[i].assento);
-
-            // Printar classe e valor baseado no booleano .classe (1=Executiva e 0=Econômica)
-            if(p[i].classe){
-                printf("Classe: executiva\n");
-                printf("Trecho: %s %s\n", v.origem, v.destino);
-                printf("Valor: %.2f", v.valExe);
-            } else {
-                printf("Classe: econômica\n");
-                printf("Trecho: %s %s\n", v.origem, v.destino);
-                printf("Valor: %.2f", v.valEco);
-            }
-        }
-    }
+    for(int i=0; i<n_passageiros; i++)
+        if(strcmp(p[i].cpf, checkCPF) == 0)
+            printarReserva(p[i], v);
 
     return;
 }
 
-void modificarReserva(passageiros *p, int n_passageiros){
+void modificarReserva(passageiros *p, voo v, int n_passageiros){
     char input[100];
     passageiros temp;
 
-    scanf("%s", input);
+    scanf(" %[^\n]s", input);
 
     char *token = strtok(input, " ");
     temp.nome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
     strcpy(temp.nome, token);
 
-    token = strtok(input, " ");
+    token = strtok(NULL, " ");
     temp.sobrenome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
     strcpy(temp.sobrenome, token);
 
-    token = strtok(input, " ");
+    token = strtok(NULL, " ");
     strcpy(temp.cpf, token);
 
-    token = strtok(input, " ");
+    token = strtok(NULL, " ");
     strcpy(temp.assento, token);
 
     for(int i=0; i<n_passageiros; i++){
@@ -240,17 +216,47 @@ void modificarReserva(passageiros *p, int n_passageiros){
             strcpy(p[i].sobrenome, temp.sobrenome);
             strcpy(p[i].cpf, temp.cpf);
             strcpy(p[i].assento, temp.assento);
-            printf("%s", p[i].assento);
         }
     }
 
-    // Colocar uma função para printar;
+    printf("Reserva Modificada:\n");
+    printarReserva(temp, v);
 
+    return;
 }
 
+void printarReserva(passageiros p, voo v){
+    // Printar CPF
+    printf("%s\n", p.cpf);
 
+    // Printar Nome e Sobrenome
+    printf("%s %s\n", p.nome, p.sobrenome);
+
+    // Printar data
+    printf("%s\n", v.data);
+
+    // Printar numero voo
+    printf("Voo: %s\n", v.numero);
+
+    // Printar assento
+    printf("Assento: %s\n", p.assento);
+
+    // Printar classe e valor baseado no booleano .classe (1=Executiva e 0=Econômica)
+    if(p.classe){
+        printf("Classe: executiva\n");
+        printf("Trecho: %s %s\n", v.origem, v.destino);
+        printf("Valor: %.2f\n", v.valExe);
+    } else {
+        printf("Classe: econômica\n");
+        printf("Trecho: %s %s\n", v.origem, v.destino);
+        printf("Valor: %.2f\n", v.valEco);
+     }
+
+     return;
+}
 /* Casos testes
 AV 200 1200.00 2500.00
 RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
+RR Maria Massa 444.555.333-93 12 12 2024 V001 A31 economica 1200.00 CGH RAO
 MR Carlos Massa 555.555.333-99 A30
 */
