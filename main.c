@@ -46,7 +46,7 @@ passageiros realizarReserva(voo *v, int n_passageiros);
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
 void modificarReserva(passageiros *p, voo v, int n_passageiros);
 void cancelarReserva(void);
-void fechamentoDia(void);
+void fechamentoDia(int n_passageiros, passageiros *p, voo v);
 void fechamentoVoo(void);
 
 void printarReserva(passageiros p, voo v);
@@ -77,6 +77,17 @@ int main(void){
 
         if(strcmp(inputComando, "MR") == 0){
             modificarReserva(passageiro, viagem, n_passageiros);
+        }
+        if(strcmp(inputComando, "CA") == 0){
+            /*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+            n_passageiros--;
+        }
+        if(strcmp(inputComando, "FD") == 0){
+            fechamentoDia(n_passageiros, passageiro, viagem);   
+        }
+        if(strcmp(inputComando, "FV") == 0){
+            /*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+           
         }
     }
 
@@ -166,6 +177,7 @@ passageiros realizarReserva(voo *v, int n_passageiros){
     // Valor (não salva)
     token = strtok(NULL, " ");
 
+
     // Origem e Destino (salva uma única vez)
     if(n_passageiros == 0){
         token = strtok(NULL, " ");
@@ -254,6 +266,23 @@ void printarReserva(passageiros p, voo v){
 
      return;
 }
+
+void fechamentoDia(int n_passageiros, passageiros *p, voo v){
+    int soma; 
+    for (int i=0; i<n_passageiros; i++){
+        if (p[i].classe == 0){
+            soma += v.valEco; 
+        }
+        else{
+            soma += v.valExe;
+        }
+    }
+    printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %d\n--------------------------------------------------", n_passageiros, soma);
+}
+
+
+
+
 /* Casos testes
 AV 200 1200.00 2500.00
 RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
