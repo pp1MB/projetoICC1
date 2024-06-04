@@ -36,7 +36,7 @@ typedef struct{
     char *sobrenome;
     char cpf[15];
     char assento[4];
-    bool classe;
+    bool classe; // 0 = econômica, 1 = executiva
 } passageiros;
 
 void *alocarMemoria(int size_vet, int size_type);
@@ -86,7 +86,7 @@ int main(void){
         }
         if(strcmp(inputComando, "FV") == 0){
             fechamentoVoo(n_passageiros, passageiro, viagem);
-           
+            break;
         }
     }
 
@@ -287,7 +287,7 @@ void cancelarReserva(int n_passageiros, passageiros *p){
 }
 
 void fechamentoDia(int n_passageiros, passageiros *p, voo v){
-    int soma = 0; 
+    float soma = 0; 
     for (int i=0; i<n_passageiros; i++){
         if (p[i].classe == 0){
             soma += v.valEco; 
@@ -297,7 +297,7 @@ void fechamentoDia(int n_passageiros, passageiros *p, voo v){
         }
     }
 
-    printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %d\n--------------------------------------------------", n_passageiros, soma);
+    printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %.2f\n--------------------------------------------------", n_passageiros, soma);
 
     return;
 }
@@ -308,7 +308,7 @@ void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
         printf("%s\n%s %s\n%s\n", reservas[i].cpf, reservas[i].nome, reservas[i].sobrenome, reservas[i].assento);
     }
         
-    int receitaTotal = 0; 
+    float receitaTotal = 0; 
     for (int i=0; i<n_passageiros; i++){
         if (reservas[i].classe == 0){
             receitaTotal += v.valEco; 
