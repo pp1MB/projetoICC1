@@ -47,7 +47,7 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros);
 void modificarReserva(passageiros *p, voo v, int n_passageiros);
 void cancelarReserva(void);
 void fechamentoDia(int n_passageiros, passageiros *p, voo v);
-void fechamentoVoo(void);
+void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v);
 
 void printarReserva(passageiros p, voo v);
 
@@ -86,7 +86,7 @@ int main(void){
             fechamentoDia(n_passageiros, passageiro, viagem);   
         }
         if(strcmp(inputComando, "FV") == 0){
-            /*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+            fechamentoVoo(n_passageiros, passageiro, viagem);
            
         }
     }
@@ -280,6 +280,23 @@ void fechamentoDia(int n_passageiros, passageiros *p, voo v){
     printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %d\n--------------------------------------------------", n_passageiros, soma);
 }
 
+void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
+    printf("Voo Fechado!\n");
+    for (int i = 0; i < n_passageiros; i++) {
+        printf("%s\n%s %s\n%s\n", reservas[i].cpf, reservas[i].nome, reservas[i].sobrenome, reservas[i].assento);
+    }
+        
+    int receitaTotal; 
+    for (int i=0; i<n_passageiros; i++){
+        if (reservas[i].classe == 0){
+            receitaTotal += v.valEco; 
+        }
+        else{
+            receitaTotal += v.valExe;
+        }
+    }
+    printf("Valor Total: %.2f\n--------------------------------------------------\n", receitaTotal);
+}
 
 
 
