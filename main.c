@@ -297,12 +297,12 @@ void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
     }
     printf("Valor Total: %.2f\n--------------------------------------------------\n", receitaTotal);
 }
-
+  
 
 
 /* Casos testes
 AV 200 1200.00 2500.00
 RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
 RR Maria Massa 444.555.333-93 12 12 2024 V001 A31 economica 1200.00 CGH RAO
-MR Carlos Massa 555.555.333-99 A30
+MR Carlos Massa 555.555.333-99 A30   
 */
