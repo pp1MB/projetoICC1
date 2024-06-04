@@ -45,7 +45,7 @@ voo aberturaVoo(void);
 passageiros realizarReserva(voo *v, int n_passageiros);
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
 void modificarReserva(passageiros *p, voo v, int n_passageiros);
-void cancelarReserva(void);
+void cancelarReserva(int n_passageiros, passageiros *p);
 void fechamentoDia(int n_passageiros, passageiros *p, voo v);
 void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v);
 
@@ -79,8 +79,7 @@ int main(void){
             modificarReserva(passageiro, viagem, n_passageiros);
         }
         if(strcmp(inputComando, "CA") == 0){
-            /*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
-            n_passageiros--;
+            cancelarReserva(n_passageiros, passageiro);
         }
         if(strcmp(inputComando, "FD") == 0){
             fechamentoDia(n_passageiros, passageiro, viagem);   
@@ -194,14 +193,15 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros){
     
     scanf("%s", checkCPF);
 
-    for(int i=0; i<n_passageiros; i++)
-        if(strcmp(p[i].cpf, checkCPF) == 0)
-            printarReserva(p[i], v);
+    for(int i=0; i<n_passageiros; i++){
+        if(strcmp(p[i].cpf, checkCPF) == 0){
 
+        }
+    }
     return;
 }
 
-void modificarReserva(passageiros *p, voo v, int n_passageiros){
+void modificarReserva(passageiros *p, voo v, int n_passageiros){//Adicionar verificações para evitar modificar assentos para assentos já ocupados.
     char input[100];
     passageiros temp;
 
@@ -238,6 +238,7 @@ void modificarReserva(passageiros *p, voo v, int n_passageiros){
 }
 
 void printarReserva(passageiros p, voo v){
+
     // Printar CPF
     printf("%s\n", p.cpf);
 
@@ -267,8 +268,26 @@ void printarReserva(passageiros p, voo v){
      return;
 }
 
+void cancelarReserva(int n_passageiros, passageiros *p){
+    char checkCPF[14];
+    
+    scanf("%s", checkCPF);
+
+    for(int i=0; i<n_passageiros; i++){
+        if(strcmp(p[i].cpf, checkCPF) == 0){
+            for (int j=0; j<n_passageiros-i; j++){
+                p[j] = p[j+1];
+            }
+            n_passageiros--;
+            return;
+        }
+    }
+    printf("Reserva não encontrada para CPF: %s\n", checkCPF);
+    return;
+}
+
 void fechamentoDia(int n_passageiros, passageiros *p, voo v){
-    int soma; 
+    int soma = 0; 
     for (int i=0; i<n_passageiros; i++){
         if (p[i].classe == 0){
             soma += v.valEco; 
@@ -277,7 +296,10 @@ void fechamentoDia(int n_passageiros, passageiros *p, voo v){
             soma += v.valExe;
         }
     }
+
     printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %d\n--------------------------------------------------", n_passageiros, soma);
+
+    return;
 }
 
 void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
@@ -286,7 +308,7 @@ void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
         printf("%s\n%s %s\n%s\n", reservas[i].cpf, reservas[i].nome, reservas[i].sobrenome, reservas[i].assento);
     }
         
-    int receitaTotal; 
+    int receitaTotal = 0; 
     for (int i=0; i<n_passageiros; i++){
         if (reservas[i].classe == 0){
             receitaTotal += v.valEco; 
@@ -295,7 +317,10 @@ void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
             receitaTotal += v.valExe;
         }
     }
+
     printf("Valor Total: %.2f\n--------------------------------------------------\n", receitaTotal);
+
+    return;
 }
   
 
