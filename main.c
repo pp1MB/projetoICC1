@@ -1,33 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <assert.h>
-
-/*
-// Tecnicamente estou declarando variáveis globais então sla, talvez dê pra mover essa struct pra main. (?)
-struct {
-    char *code;
-    void (*func)();
-} comandos[] = {
-    {"AV", aberturaVoo},
-    {"RR", realizarReserva},
-    {"CR", consultarReserva},
-    {"MR", modificarReserva},
-    {"CA", cancelarReserva},
-    {"FD", fechamentoDia},
-    {"FV", fechamentoVoo}
-};
-*/
 
 typedef struct{
     int qtdAssentos;
     float valEco;
     float valExe;
     char data[11];
-    char *numero;
+    char numero[5];
     char origem[4];
     char destino[4];
+    int fechado;
 } voo;
 
 // Estrutura para informações do passageiro.
@@ -36,154 +20,236 @@ typedef struct{
     char *sobrenome;
     char cpf[15];
     char assento[4];
-    bool classe; // 0 = econômica, 1 = executiva
+    int classe;
 } passageiros;
 
-void *alocarMemoria(int size_vet, int size_type);
 
+/* Funções referentes ao próprio programa (alocação de memória e arquivo)*/
+void *alocarMemoria(int size_vet, int size_type);
+int importarArquivo(voo *v, passageiros **p, int *n_passageiros);
+void exportarArquivo(voo v, passageiros *p, int n_passageiros);
+
+/* Funções referentes às funções que podem ser utilizadas pelo usuário (AV, RR, CR, MR, CA, FD, FV)*/
 voo aberturaVoo(void);
 passageiros realizarReserva(voo *v, int n_passageiros);
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
 void modificarReserva(passageiros *p, voo v, int n_passageiros);
-void cancelarReserva(int n_passageiros, passageiros *p);
+void cancelarReserva(int *n_passageiros, passageiros *p);
 void fechamentoDia(int n_passageiros, passageiros *p, voo v);
 void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v);
 
+/* Funções adjuntas às funções principais executadas pelo usuário*/
 void printarReserva(passageiros p, voo v);
 
 int main(void){
     char inputComando[3]; 
-    int n_passageiros = 0;
-    voo viagem; // Eu juro que não sei um nome de variável decente, será que pode usar "voo voo" ???
+    int n_passageiros = 0, bool_primeira;
+    voo viagem;
     passageiros *passageiro;
 
-    while(1){
+    viagem.fechado = 0;
+    bool_primeira = importarArquivo(&viagem, &passageiro, &n_passageiros);
 
+    do{
         scanf("%s", inputComando); // Pede o comando ao usuário
 
-        if(strcmp(inputComando, "AV") == 0){
-            viagem = aberturaVoo();
-            passageiro = (passageiros *) alocarMemoria(viagem.qtdAssentos, sizeof(passageiros)); // Mesmo problema com nome de variável
+        if(n_passageiros != viagem.qtdAssentos && !viagem.fechado){
+            if(strcmp(inputComando, "AV") == 0){
+                viagem = aberturaVoo();
+
+                if(bool_primeira)
+                    passageiro = (passageiros *) alocarMemoria(viagem.qtdAssentos, sizeof(passageiros)); 
+            }
+
+            else if(strcmp(inputComando, "RR") == 0){
+                passageiro[n_passageiros] = realizarReserva(&viagem, n_passageiros);
+                n_passageiros++;
+            }
+
+            else if(strcmp(inputComando, "CR") == 0){
+                consultarReserva(passageiro, viagem, n_passageiros);
+            }
+
+            else if(strcmp(inputComando, "MR") == 0){
+                modificarReserva(passageiro, viagem, n_passageiros);
+            }
+            
+            else if(strcmp(inputComando, "CA") == 0){
+                cancelarReserva(&n_passageiros, passageiro);
+            }
+
+            else if(strcmp(inputComando, "FD") == 0){
+                fechamentoDia(n_passageiros, passageiro, viagem);
+                break;   
+            }
+
+            else if(strcmp(inputComando, "FV") == 0){
+                fechamentoVoo(n_passageiros, passageiro, viagem);
+                viagem.fechado = 1;
+            }
         }
 
-        if(strcmp(inputComando, "RR") == 0){
-            passageiro[n_passageiros] = realizarReserva(&viagem, n_passageiros);
-            n_passageiros++;
-        }
-
-        if(strcmp(inputComando, "CR") == 0){
-            consultarReserva(passageiro, viagem, n_passageiros);
-        }
-
-        if(strcmp(inputComando, "MR") == 0){
-            modificarReserva(passageiro, viagem, n_passageiros);
-        }
-        if(strcmp(inputComando, "CA") == 0){
-            cancelarReserva(n_passageiros, passageiro);
-        }
-        if(strcmp(inputComando, "FD") == 0){
-            fechamentoDia(n_passageiros, passageiro, viagem);   
-        }
-        if(strcmp(inputComando, "FV") == 0){
+        if(n_passageiros == viagem.qtdAssentos || viagem.fechado)
             fechamentoVoo(n_passageiros, passageiro, viagem);
-            break;
-        }
-    }
 
-    /*
-    // Esse trecho pega uma lista de comandos e compara com o "inputComando", ao achar um comando correspondente ele chama a função desse comando.
-    for(int i=0; i < 7; i++){
-        if(strcmp(inputComando, comandos[i].code) == 0){
-            comandos[i].func();
-        }
-    }
-    */
+    } while(1);
+
+    exportarArquivo(viagem, passageiro, n_passageiros);
 
     return 0;
 }
 
 void *alocarMemoria(int size_vet, int size_type){
     void *vet;
-    vet = malloc(size_vet * size_type);
+    vet = calloc(size_vet, size_type);
 
-    assert(vet != NULL); // Crashar o programa parece ser meio drástico, podemos trabalhar melhor nisso.
+    assert(vet != NULL);
 
     return vet;
+}
+
+int importarArquivo(voo *v, passageiros **p, int *n_passageiros) {
+    FILE *fp;
+
+    if ((fp = fopen("arquivo.bin", "rb")) == NULL)
+        return 1;
+    else {
+        fread(n_passageiros, sizeof(int), 1, fp);
+        fread(&(*v).qtdAssentos, sizeof(int), 1, fp);
+        fread(&(*v).valEco, sizeof(float), 1, fp);
+        fread(&(*v).valExe, sizeof(float), 1, fp);
+        fread((*v).data, sizeof(char), 11, fp);
+        // (*v).data[10] = '\0'; 
+        fread((*v).numero, sizeof(char), 5, fp);
+        // (*v).numero[4] = '\0';
+        fread((*v).origem, sizeof(char), 4, fp);
+        // (*v).origem[3] = '\0';
+        fread((*v).destino, sizeof(char), 4, fp);
+        // (*v).destino[3] = '\0';
+
+        *p = (passageiros *) alocarMemoria((*v).qtdAssentos, sizeof(passageiros));
+
+        for (int i = 0; i < (*n_passageiros); i++) {
+            // Nome
+            long int len_nome;
+            fread(&len_nome, sizeof(long int), 1, fp);
+            (*p)[i].nome = alocarMemoria(len_nome, sizeof(char));
+            fread((*p)[i].nome, sizeof(char), len_nome, fp);
+            // (*p)[i].nome[len_nome] = '\0';
+
+            // Sobrenome
+            long int len_sobrenome;
+            fread(&len_sobrenome, sizeof(long int), 1, fp);
+            (*p)[i].sobrenome = alocarMemoria(len_sobrenome, sizeof(char));
+            fread((*p)[i].sobrenome, sizeof(char), len_sobrenome, fp);
+            // (*p)[i].nome[len_nome] = '\0';
+
+            // CPF
+            fread((*p)[i].cpf, sizeof(char), 15, fp);
+            // (*p)[i].cpf[14] = '\0';  // Null-terminate the string
+
+            // Assento
+            fread((*p)[i].assento, sizeof(char), 4, fp);
+            // (*p)[i].assento[3] = '\0';  // Null-terminate the string
+
+            // Classe
+            fread(&(*p)[i].classe, sizeof(int), 1, fp);
+        }
+    }
+    fclose(fp);
+
+    return 0;
+}
+
+
+
+void exportarArquivo(voo v, passageiros *p, int n_passageiros){
+    FILE *fp;
+    fp = fopen("arquivo.bin", "wb");
+
+    fwrite(&n_passageiros, sizeof(int), 1, fp);
+    fwrite(&v.qtdAssentos, sizeof(int), 1, fp);
+    fwrite(&v.valEco, sizeof(float), 1, fp);
+    fwrite(&v.valExe, sizeof(float), 1, fp);
+    fwrite(v.data, sizeof(char), 11, fp);
+    fwrite(v.numero, sizeof(char), 5, fp);
+    fwrite(v.origem, sizeof(char), 4, fp);
+    fwrite(v.destino, sizeof(char), 4, fp);
+
+    for(int i=0; i < n_passageiros; i++){
+        // Nome
+        long int len_nome = strlen(p[i].nome) + 1;
+        fwrite(&len_nome, sizeof(long int), 1, fp);
+        fwrite(p[i].nome, sizeof(char), len_nome, fp);
+
+        // Sobrenome
+        long int len_sobrenome = strlen(p[i].sobrenome) + 1;
+        fwrite(&len_sobrenome, sizeof(long int), 1, fp);
+        fwrite(p[i].sobrenome, sizeof(char), len_sobrenome, fp);
+
+        // CPF
+        fwrite(p[i].cpf, sizeof(char), 15, fp);
+
+        // Assento
+        fwrite(p[i].assento, sizeof(char), 4, fp);
+
+        // Classe
+        fwrite(&p[i].classe, sizeof(int), 1, fp);
+    }
+    fclose(fp);
+    return;
 }
 
 voo aberturaVoo(void){
     voo v; 
 
-    scanf("%d", &v.qtdAssentos);
-    scanf("%f", &v.valEco);
-    scanf("%f", &v.valExe);
+    scanf("%d %f %f", &v.qtdAssentos, &v.valEco, &v.valExe);
 
     return v;
 }
 
 passageiros realizarReserva(voo *v, int n_passageiros){
     passageiros p;
-    char input[200]; // 200 é suficiente?
-
-    // Não sei se é melhor separar uma string pra nome e outra pra sobrenome ou fazer uma lógica para pular o primeiro espaço e armazenar tudo em uma string.
-    scanf(" %[^\n]s", input);
 
     // Nome
-    char *token = strtok(input, " ");
-    p.nome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
-    strcpy(p.nome, token);
+    char nome[100];
+    scanf("%s", nome);
+    p.nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
+    strcpy(p.nome, nome);
 
-    // Sobrennome
-    token = strtok(NULL, " ");
-    p.sobrenome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
-    strcpy(p.sobrenome, token);
+    // Sobrenome
+    char sobrenome[100];
+    scanf("%s", sobrenome);
+    p.sobrenome = (char *) alocarMemoria(strlen(sobrenome) + 1, sizeof(char));
+    strcpy(p.sobrenome, sobrenome);
 
-    // CPF
-    token = strtok(NULL, " ");
-    strncpy(p.cpf, token, 14);
-    p.cpf[14] = '\0';
+    // CPF (tamanho definido)
+    scanf("%s", p.cpf);
 
-    // Data (salva uma única vez)
-    for(int i=0; i < 3; i++) {
-        token = strtok(NULL, " ");
-        
-        if(n_passageiros == 0){
-            strcat((*v).data, token);
-            if (i < 2) 
-                strcat((*v).data, "/");
-        }
-
-    }
-    (*v).data[11] = '\0';
+    // Data (tamanho definido) (salva uma única vez)
+    scanf(" %10[^\n]s", (*v).data);
+    (*v).data[2] = '/';
+    (*v).data[5] = '/';
 
     // Número Voo (salva uma única vez)
-    token = strtok(NULL, " ");
-    if(n_passageiros == 0){
-        (*v).numero = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
-        strcpy((*v).numero, token);
-    }
+    scanf("%s", (*v).numero);
 
     // Assento
-    token = strtok(NULL, " ");
-    strncpy(p.assento, token, 3);
-    p.assento[3] = '\0';
+    scanf("%s", p.assento);
 
     // Classe
-    token = strtok(NULL, " ");
-    if(strcmp(token, "economica") == 0) p.classe = false;
-    if(strcmp(token, "executiva") == 0) p.classe = true;
+    char classe[10];
+    scanf("%s", classe);
+    if(strcmp(classe, "economica") == 0) p.classe = 0;
+    if(strcmp(classe, "executiva") == 0) p.classe = 1;
 
     // Valor (não salva)
-    token = strtok(NULL, " ");
-
+    float valor;
+    scanf("%f", &valor);
 
     // Origem e Destino (salva uma única vez)
-    if(n_passageiros == 0){
-        token = strtok(NULL, " ");
-        strcpy((*v).origem, token);
-        token = strtok(NULL, " ");
-        strcpy((*v).destino, token);
-    }
+    scanf("%s", (*v).origem);
+    scanf("%s", (*v).destino);
 
     return p;
 }
@@ -193,46 +259,44 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros){
     
     scanf("%s", checkCPF);
 
-    for(int i=0; i<n_passageiros; i++){
+    for(int i=0; i < n_passageiros; i++){
         if(strcmp(p[i].cpf, checkCPF) == 0){
-
+            printarReserva(p[i], v);
+            break;
         }
     }
     return;
 }
 
-void modificarReserva(passageiros *p, voo v, int n_passageiros){//Adicionar verificações para evitar modificar assentos para assentos já ocupados.
-    char input[100];
+void modificarReserva(passageiros *p, voo v, int n_passageiros){
     passageiros temp;
 
-    scanf(" %[^\n]s", input);
+    char checkCPF[14];
+    scanf("%s", checkCPF);
 
-    char *token = strtok(input, " ");
-    temp.nome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
-    strcpy(temp.nome, token);
-
-    token = strtok(NULL, " ");
-    temp.sobrenome = (char *) alocarMemoria(strlen(token) + 1, sizeof(char));
-    strcpy(temp.sobrenome, token);
-
-    token = strtok(NULL, " ");
-    strcpy(temp.cpf, token);
-
-    token = strtok(NULL, " ");
-    strcpy(temp.assento, token);
-
-    for(int i=0; i<n_passageiros; i++){
-        if(strcmp(p[i].nome, temp.nome) == 0 || strcmp(p[i].sobrenome, temp.sobrenome) == 0 || strcmp(p[i].cpf, temp.cpf) == 0 || strcmp(p[i].assento, temp.assento) == 0){
+    for(int i=0; i < n_passageiros; i++){
+        if(strcmp(p[i].cpf, checkCPF) == 0){
             // Todos os dados são reatribuídos.
-            strcpy(p[i].nome, temp.nome);
-            strcpy(p[i].sobrenome, temp.sobrenome);
-            strcpy(p[i].cpf, temp.cpf);
-            strcpy(p[i].assento, temp.assento);
+            char nome[100];
+            scanf("%s", nome);
+            p[i].nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
+            strcpy(p[i].nome, nome);
+
+            char sobrenome[100];
+            scanf("%s", sobrenome);
+            p[i].sobrenome = (char *) alocarMemoria(strlen(sobrenome) + 1, sizeof(char));
+            strcpy(p[i].sobrenome, sobrenome);
+
+            scanf("%s", p[i].cpf);
+
+            scanf("%s", p[i].assento);
+
+            printf("Reserva Modificada:\n");
+            printarReserva(p[i], v);
+
+            break;
         }
     }
-
-    printf("Reserva Modificada:\n");
-    printarReserva(temp, v);
 
     return;
 }
@@ -263,59 +327,61 @@ void printarReserva(passageiros p, voo v){
         printf("Classe: econômica\n");
         printf("Trecho: %s %s\n", v.origem, v.destino);
         printf("Valor: %.2f\n", v.valEco);
-     }
+    }
 
-     return;
+    printf("--------------------------------------------------\n");
+    return;
 }
 
-void cancelarReserva(int n_passageiros, passageiros *p){
+void cancelarReserva(int *n_passageiros, passageiros *p){
     char checkCPF[14];
+    int mover = 0;
     
     scanf("%s", checkCPF);
 
-    for(int i=0; i<n_passageiros; i++){
-        if(strcmp(p[i].cpf, checkCPF) == 0){
-            for (int j=0; j<n_passageiros-i; j++){
-                p[j] = p[j+1];
-            }
-            n_passageiros--;
-            return;
-        }
+    for(int i=0; i < (*n_passageiros); i++){
+
+        if(strcmp(p[i].cpf, checkCPF) == 0)
+            mover = 1;
+
+        else if(mover)
+            p[i-1] = p[i];
     }
-    printf("Reserva não encontrada para CPF: %s\n", checkCPF);
+
+    if(mover)
+        (*n_passageiros)--;
+
     return;
 }
 
 void fechamentoDia(int n_passageiros, passageiros *p, voo v){
-    float soma = 0; 
-    for (int i=0; i<n_passageiros; i++){
+    float receitaDiaria = 0; 
+
+    for (int i=0; i < n_passageiros; i++){
         if (p[i].classe == 0){
-            soma += v.valEco; 
+            receitaDiaria += v.valEco; 
         }
         else{
-            soma += v.valExe;
+            receitaDiaria += v.valExe;
         }
     }
 
-    printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %.2f\n--------------------------------------------------", n_passageiros, soma);
+    printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %.2f\n--------------------------------------------------\n", n_passageiros, receitaDiaria);
 
     return;
 }
 
 void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
-    printf("Voo Fechado!\n");
-    for (int i = 0; i < n_passageiros; i++) {
-        printf("%s\n%s %s\n%s\n", reservas[i].cpf, reservas[i].nome, reservas[i].sobrenome, reservas[i].assento);
-    }
-        
     float receitaTotal = 0; 
-    for (int i=0; i<n_passageiros; i++){
-        if (reservas[i].classe == 0){
+
+    printf("Voo Fechado!\n\n");
+    for (int i = 0; i < n_passageiros; i++) {
+        printf("%s\n%s %s\n%s\n\n", reservas[i].cpf, reservas[i].nome, reservas[i].sobrenome, reservas[i].assento);
+
+        if (reservas[i].classe == 0)
             receitaTotal += v.valEco; 
-        }
-        else{
+        else
             receitaTotal += v.valExe;
-        }
     }
 
     printf("Valor Total: %.2f\n--------------------------------------------------\n", receitaTotal);
@@ -329,5 +395,7 @@ void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
 AV 200 1200.00 2500.00
 RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
 RR Maria Massa 444.555.333-93 12 12 2024 V001 A31 economica 1200.00 CGH RAO
-MR Carlos Massa 555.555.333-99 A30   
+RR Roberto Carlos 555.333.333-89 12 12 2024 V001 P12 executiva 2500.00 CGH RAO
+MR 555.555.333-99 Carlos Massa 555.555.333-99 A30   
+CA 444.555.333-93
 */
