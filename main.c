@@ -6,7 +6,8 @@
 qtdAssentos, valEco e valExe são passadas durante a 'Abertura do Voo (AV)', enquanto as propriedades
 data, numero, origem e destino são passadas durante o 'Realizar Reserva (RR)' de cada passageiro. Assume-se
 que esses dados são padronizados em um modelo específico e por isso são vetores estáticos. O booleano 
-fechado (bool_fechado) define se o voo está aberto(0) ou fechado(1).*/
+fechado (bool_fechado), embora tenha o nome bool, na verdade é uma variável de controle com 3 estados possíveis:
+voo não declarado (-1), voo aberto (0) e voo fechado (1)*/
 typedef struct{
     int qtdAssentos;
     float valEco;
@@ -34,18 +35,19 @@ typedef struct{
 /* Protótipo das funções*/
 /* Funções referentes ao próprio programa (alocação de memória e arquivo)*/
 void *alocarMemoria(int size_vet, int size_type);
-int importarArquivo(voo *v, passageiros **p, int *n_passageiros);
-void exportarArquivo(voo v, passageiros *p, int n_passageiros);
+int importarArquivo(passageiros **p, voo *v, int *n_passageiros);
+void exportarArquivo(passageiros *p, voo v, int n_passageiros);
 void freeMemoria(passageiros *p, int n_passageiros);
 
 /* Funções referentes às funções que podem ser utilizadas pelo usuário (AV, RR, CR, MR, CA, FD, FV)*/
 voo aberturaVoo(void);
-passageiros realizarReserva(voo *v, int n_passageiros);
+passageiros realizarReserva(voo *v);
+
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
 void modificarReserva(passageiros *p, voo v, int n_passageiros);
-void cancelarReserva(int *n_passageiros, passageiros *p);
-void fechamentoDia(int n_passageiros, passageiros *p, voo v);
-void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v);
+void cancelarReserva(passageiros *p, voo v, int *n_passageiros);
+void fechamentoDia(passageiros *p, voo v, int n_passageiros);
+void fechamentoVoo(passageiros *p, voo v, int n_passageiros);
 
 /* Funções adjuntas às funções principais executadas pelo usuário*/
 void printarReserva(passageiros p, voo v);
@@ -53,66 +55,74 @@ void printarReserva(passageiros p, voo v);
 int main(void){
     char inputComando[3]; 
     int n_passageiros = 0, bool_primeira;
-    voo viagem = {0, 0, 0, "", "", "", "", -1};
+    voo viagem = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1}; // Incialização da struct viagem, o estado inicial é "voo não declarado".
     passageiros *passageiro = NULL;
 
     // Bool_primeira verifica se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.
-    bool_primeira = importarArquivo(&viagem, &passageiro, &n_passageiros);
+    bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros);
 
+    // A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado.
     if(viagem.bool_fechado == 1)
-        fechamentoVoo(n_passageiros, passageiro, viagem);
+        fechamentoVoo(passageiro, viagem, n_passageiros);
 
+    /* O looping abaixo é referente ao funcionamento do programa baseado nos comandos fornecidos pelo usuário. Apesar da condicional do loop
+    ser sempre verdadeira, comandos que encerram o programa (FD e FV) quebram o loop.*/
     do{
         scanf("%s", inputComando); // Pede o comando ao usuário
 
-        if(strcmp(inputComando, "AV") == 0 && viagem.bool_fechado == -1){
-            viagem = aberturaVoo();
-            viagem.bool_fechado = 0;
-            if(bool_primeira){
-                passageiro = (passageiros *) alocarMemoria(viagem.qtdAssentos, sizeof(passageiros));
-            }
+        /* O comando AV só pode ser executado caso o voo esteja não declarado, caso isso não ocorra, o comando de aberturaVoo é chamado 
+        sem nenhum retorno para limpar o buffer do teclado*/
+        if(strcmp(inputComando, "AV") == 0){
+            if(viagem.bool_fechado == -1){
+                viagem = aberturaVoo();
+                viagem.bool_fechado = 0;
+                if(bool_primeira)
+                    passageiro = (passageiros *) alocarMemoria(viagem.qtdAssentos, sizeof(passageiros));
+            } else 
+                aberturaVoo();
         }
-
+        
         else if(strcmp(inputComando, "CR") == 0){
             consultarReserva(passageiro, viagem, n_passageiros);
         } 
         
-        else if(strcmp(inputComando, "FD") == 0){
-            fechamentoDia(n_passageiros, passageiro, viagem);
-            break;
-        } 
-
-        else if(strcmp(inputComando, "FV") == 0){
-            fechamentoVoo(n_passageiros, passageiro, viagem);
-            viagem.bool_fechado = 1;
-            break;
-        } 
-        
-        else{
-            if(strcmp(inputComando, "RR") == 0 && viagem.bool_fechado != -1){
-                passageiro[n_passageiros] = realizarReserva(&viagem, n_passageiros);
+        else if(strcmp(inputComando, "RR") == 0){
+            if(viagem.bool_fechado == 0){
+                passageiro[n_passageiros] = realizarReserva(&viagem);
                 n_passageiros++;
             }
-
-            else if(strcmp(inputComando, "MR") == 0){
-                modificarReserva(passageiro, viagem, n_passageiros);
-            }
-            
-            else if(strcmp(inputComando, "CA") == 0){
-                cancelarReserva(&n_passageiros, passageiro);
-            }
-
+            else
+                realizarReserva(&viagem);
         }
+
+        else if(strcmp(inputComando, "MR") == 0){
+            modificarReserva(passageiro, viagem, n_passageiros);
+        }
+            
+        else if(strcmp(inputComando, "CA") == 0){
+            cancelarReserva(passageiro, viagem, &n_passageiros);
+        }
+
+        else if(strcmp(inputComando, "FV") == 0 || viagem.bool_fechado == 1){
+            fechamentoVoo(passageiro, viagem, n_passageiros);
+            viagem.bool_fechado = 1;
+            break;
+        }
+
+        else if(strcmp(inputComando, "FD") == 0){
+            fechamentoDia(passageiro, viagem, n_passageiros);
+            break;
+        } 
         
         if(n_passageiros == viagem.qtdAssentos){
-            fechamentoVoo(n_passageiros, passageiro, viagem);
+            fechamentoVoo(passageiro, viagem, n_passageiros);
             viagem.bool_fechado = 1;
             break;
         }
 
     } while(1);
 
-    exportarArquivo(viagem, passageiro, n_passageiros);
+    exportarArquivo(passageiro, viagem, n_passageiros);
     freeMemoria(passageiro, n_passageiros);
 
     return 0;
@@ -133,7 +143,7 @@ void *alocarMemoria(int size_vet, int size_type){
 
 /* Essa função é responsável por importar os dados do arquivo para dentro do programa. Caso o arquivo não exista, ele retorna 1 para o 'bool_primeira'
 na main, indicando que o arquivo está sendo aberto pela primeira vez.*/
-int importarArquivo(voo *v, passageiros **p, int *n_passageiros) {
+int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
     FILE *fp;
 
     if ((fp = fopen("arquivo.bin", "rb")) == NULL)
@@ -180,7 +190,7 @@ int importarArquivo(voo *v, passageiros **p, int *n_passageiros) {
     return 0;
 }
 
-void exportarArquivo(voo v, passageiros *p, int n_passageiros){
+void exportarArquivo(passageiros *p, voo v, int n_passageiros){
     FILE *fp;
     if((fp = fopen("arquivo.bin", "wb")) == 0){
         printf("Erro em abrir o arquivo para escrita, saindo do programa.");
@@ -233,14 +243,14 @@ void freeMemoria(passageiros *p, int n_passageiros){
 }
 
 voo aberturaVoo(void){
-    voo v; 
+    voo v = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1};
 
     scanf("%d %f %f", &v.qtdAssentos, &v.valEco, &v.valExe);
 
     return v;
 }
 
-passageiros realizarReserva(voo *v, int n_passageiros){
+passageiros realizarReserva(voo *v){
     passageiros p;
 
     // Nome
@@ -316,60 +326,63 @@ void modificarReserva(passageiros *p, voo v, int n_passageiros){
     char assento[4];
     scanf("%s", assento);
 
-    for(int i=0; i < n_passageiros; i++){
-        if(strcmp(p[i].cpf, checkCPF) == 0){
-            // Todos os dados são reatribuídos.
-            free(p[i].nome);
-            p[i].nome = NULL;
-            p[i].nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
-            strcpy(p[i].nome, nome);
+    if(v.bool_fechado == 0)
+        for(int i=0; i < n_passageiros; i++){
+            if(strcmp(p[i].cpf, checkCPF) == 0){
+                // Todos os dados são reatribuídos.
+                free(p[i].nome);
+                p[i].nome = NULL;
+                p[i].nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
+                strcpy(p[i].nome, nome);
 
-            free(p[i].sobrenome);
-            p[i].sobrenome = NULL;
-            p[i].sobrenome = (char *) alocarMemoria(strlen(sobrenome) + 1, sizeof(char));
-            strcpy(p[i].sobrenome, sobrenome);
+                free(p[i].sobrenome);
+                p[i].sobrenome = NULL;
+                p[i].sobrenome = (char *) alocarMemoria(strlen(sobrenome) + 1, sizeof(char));
+                strcpy(p[i].sobrenome, sobrenome);
 
-            strcpy(p[i].cpf, cpf);
+                strcpy(p[i].cpf, cpf);
 
-            strcpy(p[i].assento, assento);
+                strcpy(p[i].assento, assento);
 
-            printf("Reserva Modificada:\n");
-            printarReserva(p[i], v);
+                printf("Reserva Modificada:\n");
+                printarReserva(p[i], v);
 
-            break;
+                break;
+            }
         }
-    }
 
     return;
 }
 
-void cancelarReserva(int *n_passageiros, passageiros *p){
+void cancelarReserva(passageiros *p, voo v, int *n_passageiros){
     char checkCPF[15];
     int bool_mover = 0;
     
     scanf("%s", checkCPF);
 
-    for(int i=0; i < (*n_passageiros); i++){
+    if(v.bool_fechado == 0){
+        for(int i=0; i < (*n_passageiros); i++){
 
-        if(strcmp(p[i].cpf, checkCPF) == 0){
-            bool_mover = 1;
-            free(p[i].nome);
-            p[i].nome = NULL;
-            free(p[i].sobrenome);
-            p[i].sobrenome = NULL;
+            if(strcmp(p[i].cpf, checkCPF) == 0){
+                bool_mover = 1;
+                free(p[i].nome);
+                p[i].nome = NULL;
+                free(p[i].sobrenome);
+                p[i].sobrenome = NULL;
+            }
+
+            else if(bool_mover)
+                p[i-1] = p[i];
         }
 
-        else if(bool_mover)
-            p[i-1] = p[i];
+        if(bool_mover)
+            (*n_passageiros)--;
     }
-
-    if(bool_mover)
-        (*n_passageiros)--;
 
     return;
 }
 
-void fechamentoDia(int n_passageiros, passageiros *p, voo v){
+void fechamentoDia(passageiros *p, voo v, int n_passageiros){
     float receitaDiaria = 0; 
 
     for (int i=0; i < n_passageiros; i++){
@@ -386,14 +399,14 @@ void fechamentoDia(int n_passageiros, passageiros *p, voo v){
     return;
 }
 
-void fechamentoVoo(int n_passageiros, passageiros *reservas, voo v) {
+void fechamentoVoo(passageiros *p, voo v, int n_passageiros){
     float receitaTotal = 0; 
 
     printf("Voo Fechado!\n\n");
     for (int i = 0; i < n_passageiros; i++) {
-        printf("%s\n%s %s\n%s\n\n", reservas[i].cpf, reservas[i].nome, reservas[i].sobrenome, reservas[i].assento);
+        printf("%s\n%s %s\n%s\n\n", p[i].cpf, p[i].nome, p[i].sobrenome, p[i].assento);
 
-        if (reservas[i].bool_classe == 0)
+        if (p[i].bool_classe == 0)
             receitaTotal += v.valEco; 
         else
             receitaTotal += v.valExe;
