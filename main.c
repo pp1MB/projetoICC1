@@ -1,3 +1,5 @@
+/* Autores: Jhonatan Barboza da Silva, João Gabriel Pieroli da Silva, Pedro Henrique de Souza Prestes */
+/* USP-ICMC BCC024 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
