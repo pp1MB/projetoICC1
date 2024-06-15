@@ -53,23 +53,22 @@ void printarReserva(passageiros p, voo v);
 int main(void){
     char inputComando[3]; 
     int n_passageiros = 0, bool_primeira;
-    voo viagem;
-    passageiros *passageiro;
+    voo viagem = {0, 0, 0, "", "", "", "", -1};
+    passageiros *passageiro = NULL;
 
     // Bool_primeira verifica se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.
-    if(bool_primeira = importarArquivo(&viagem, &passageiro, &n_passageiros))
-        viagem.bool_fechado = 0; 
+    bool_primeira = importarArquivo(&viagem, &passageiro, &n_passageiros);
 
-    if(viagem.bool_fechado)
+    if(viagem.bool_fechado == 1)
         fechamentoVoo(n_passageiros, passageiro, viagem);
 
-    // Essa lógica de seleção de comandos precisa ser urgentemente adaptada para quando ocorre o fechamento do voo.
     do{
         scanf("%s", inputComando); // Pede o comando ao usuário
 
-        if(strcmp(inputComando, "AV") == 0){
+        if(strcmp(inputComando, "AV") == 0 && viagem.bool_fechado == -1){
+            viagem = aberturaVoo();
+            viagem.bool_fechado = 0;
             if(bool_primeira){
-                viagem = aberturaVoo();
                 passageiro = (passageiros *) alocarMemoria(viagem.qtdAssentos, sizeof(passageiros));
             }
         }
@@ -83,14 +82,14 @@ int main(void){
             break;
         } 
 
-        else if(strcmp(inputComando, "FV") == 0 || viagem.bool_fechado){
+        else if(strcmp(inputComando, "FV") == 0){
             fechamentoVoo(n_passageiros, passageiro, viagem);
             viagem.bool_fechado = 1;
             break;
         } 
         
         else{
-            if(strcmp(inputComando, "RR") == 0){
+            if(strcmp(inputComando, "RR") == 0 && viagem.bool_fechado != -1){
                 passageiro[n_passageiros] = realizarReserva(&viagem, n_passageiros);
                 n_passageiros++;
             }
@@ -305,26 +304,34 @@ void modificarReserva(passageiros *p, voo v, int n_passageiros){
     char checkCPF[15];
     scanf("%s", checkCPF);
 
+    char nome[100];
+    scanf("%s", nome);
+
+    char sobrenome[100];
+    scanf("%s", sobrenome);
+
+    char cpf[15];
+    scanf("%s", cpf);
+
+    char assento[4];
+    scanf("%s", assento);
+
     for(int i=0; i < n_passageiros; i++){
         if(strcmp(p[i].cpf, checkCPF) == 0){
             // Todos os dados são reatribuídos.
-            char nome[100];
-            scanf("%s", nome);
             free(p[i].nome);
             p[i].nome = NULL;
             p[i].nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
             strcpy(p[i].nome, nome);
 
-            char sobrenome[100];
-            scanf("%s", sobrenome);
             free(p[i].sobrenome);
             p[i].sobrenome = NULL;
             p[i].sobrenome = (char *) alocarMemoria(strlen(sobrenome) + 1, sizeof(char));
             strcpy(p[i].sobrenome, sobrenome);
 
-            scanf("%s", p[i].cpf);
+            strcpy(p[i].cpf, cpf);
 
-            scanf("%s", p[i].assento);
+            strcpy(p[i].assento, assento);
 
             printf("Reserva Modificada:\n");
             printarReserva(p[i], v);
