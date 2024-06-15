@@ -151,7 +151,8 @@ int main(void){
     return 0;
 }
 
-/* Essa função é responsável por alocar memória de vetores utilizando o 'calloc' e produzindo uma saída de erro em caso de problema na alocação.*/
+/* Essa função é responsável por alocar memória de vetores utilizando o 'calloc' e produzindo uma saída de erro
+em caso de problema na alocação.*/
 void *alocarMemoria(int size_vet, int size_type){
     void *vet;
     vet = calloc(size_vet, size_type);
@@ -164,14 +165,19 @@ void *alocarMemoria(int size_vet, int size_type){
     return vet;
 }
 
-/* Essa função é responsável por importar os dados do arquivo para dentro do programa. Caso o arquivo não exista, 
-ele retorna 1 para o 'bool_primeira' na main, indicando que o arquivo está sendo aberto pela primeira vez.*/
+/* Essa função é responsável por importar os dados do arquivo para dentro do programa. Caso o arquivo não exista,
+ele retorna 1 para o 'bool_primeira' na main, indicando que o arquivo está sendo aberto pela primeira vez. Sempre
+que existir, vamos ler tudo que temos lá. */
 int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
     FILE *fp;
 
     if ((fp = fopen("arquivo.bin", "rb")) == NULL)
         return 1;
     else {
+
+        /* Primeiramente, lemos o número de passageiros e, em seguida, os dados da struct viagem, aqui representada
+        por *v. Como v tem informações de tamanhos fixos, basta lê-los com seus respectivos tipos e extensão */ 
+
         fread(n_passageiros, sizeof(int), 1, fp);
         fread(&(*v).qtdAssentos, sizeof(int), 1, fp);
         fread(&(*v).valEco, sizeof(float), 1, fp);
@@ -184,27 +190,31 @@ int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
 
         *p = (passageiros *) alocarMemoria((*v).qtdAssentos, sizeof(passageiros));
 
+        /* Já para o vetor de structs, é preciso ler o tamanho de cada nome e sobrenome (salvos no arquivo) antes
+        de efetivamente fazermos a sua leitura, pois fazemos alocação dinâmica. Depois, temos outros dados de
+        tamanho fixo, bastando lê-los. Todo esse processo ocorre dentro de um for que é guiado segundo o número de
+        passageiros, que já foi lido anteriormente */
         for (int i = 0; i < (*n_passageiros); i++){
 
-            // Nome (recebe o strlen da string de dentro do arquivo para que possa alocar a memória)
+            /* Nome (recebe o strlen da string de dentro do arquivo para que possa alocar a memória) */
             long int len_nome;
             fread(&len_nome, sizeof(long int), 1, fp);
             (*p)[i].nome = alocarMemoria(len_nome, sizeof(char));
             fread((*p)[i].nome, sizeof(char), len_nome, fp);
 
-            // Sobrenome (recebe o strlen da string de dentro do arquivo para que possa alocar a memória)
+            /* Sobrenome (recebe o strlen da string de dentro do arquivo para que possa alocar a memória) */
             long int len_sobrenome;
             fread(&len_sobrenome, sizeof(long int), 1, fp);
             (*p)[i].sobrenome = alocarMemoria(len_sobrenome, sizeof(char));
             fread((*p)[i].sobrenome, sizeof(char), len_sobrenome, fp);
 
-            // CPF
+            /* CPF */
             fread((*p)[i].cpf, sizeof(char), 15, fp);
 
-            // Assento
+            /* Assento */
             fread((*p)[i].assento, sizeof(char), 4, fp);
 
-            // Classe
+            /* Classe */
             fread(&(*p)[i].bool_classe, sizeof(int), 1, fp);
         }
     }
@@ -213,6 +223,9 @@ int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
     return 0;
 }
 
+/* Essa função é responsável por exportar os dados do programa para dentro do arquivo. Caso ele não consiga abrir
+o arquivo para escrita, retornamos com uma mensagem de erro. Sempre que for bem sucedida, vamos escrever nele tudo
+o que temos salvo no programa.*/
 void exportarArquivo(passageiros *p, voo v, int n_passageiros){
     FILE *fp;
     if((fp = fopen("arquivo.bin", "wb")) == 0){
@@ -220,6 +233,8 @@ void exportarArquivo(passageiros *p, voo v, int n_passageiros){
         exit(1);
     }
 
+    /* Primeiramente, salvamos o número de passageiros e, em seguida, os dados da struct viagem, aqui representada
+    por v. Como v tem informações de tamanhos fixos, basta escrevê-los com seus respectivos tipos e extensão */
     fwrite(&n_passageiros, sizeof(int), 1, fp);
     fwrite(&v.qtdAssentos, sizeof(int), 1, fp);
     fwrite(&v.valEco, sizeof(float), 1, fp);
@@ -230,6 +245,11 @@ void exportarArquivo(passageiros *p, voo v, int n_passageiros){
     fwrite(v.destino, sizeof(char), 4, fp);
     fwrite(&v.bool_fechado, sizeof(int), 1, fp);
 
+    /* Já para o vetor de structs, é preciso verificar o tamanho de cada nome (e sobrenome), salvá-lo no arquivo,
+    logo antes de cada um deles, para que se tornasse possível fazer a leitura(importarArquivo) de forma adequada,
+    alocando-os dinamicamente. Em seguida, temos outros dados com tamanhos fixos, bastando escrevê-los com seus
+    respectivos tipos e extensão. Todo esse processo ocorre dentro de um for que é guiado segundo o número de 
+    passageiros */
     for(int i=0; i < n_passageiros; i++){
         // Nome
         long int len_nome = strlen(p[i].nome) + 1;
@@ -253,7 +273,8 @@ void exportarArquivo(passageiros *p, voo v, int n_passageiros){
     fclose(fp);
     return;
 }
-
+/* Essa função é responsável por efetuar a desalocação da memória da váriavel *p, representando o vetor de structs
+passageiro da main */
 void freeMemoria(passageiros *p, int n_passageiros){
     for(int i=0; i < n_passageiros; i++){
         free(p[i].nome);
