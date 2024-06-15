@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* A estrutura definida pelo tipo "voo" define todas as propriedades do voo. As propriedades
-qtdAssentos, valEco e valExe são passadas durante a 'Abertura do Voo (AV)', enquanto as propriedades
-data, numero, origem e destino são passadas durante o 'Realizar Reserva (RR)' de cada passageiro. Assume-se
-que esses dados são padronizados em um modelo específico e por isso são vetores estáticos. O booleano 
+/* A estrutura definida pelo tipo "voo" define todas as propriedades do voo. As propriedades qtdAssentos, valEco
+e valExe são passadas durante a 'Abertura do Voo (AV)', enquanto as propriedades data, numero, origem e destino
+são passadas durante o 'Realizar Reserva (RR)' de cada passageiro. Assume-se que esses dados são padronizados em
+um modelo específico e por isso são vetores estáticos, com tamanho estendido até o \0 da string. O booleano 
 fechado (bool_fechado), embora tenha o nome bool, na verdade é uma variável de controle com 3 estados possíveis:
 voo não declarado (-1), voo aberto (0) e voo fechado (1)*/
 typedef struct{
@@ -19,11 +19,12 @@ typedef struct{
     int bool_fechado;
 } voo;
 
-/*A estrutura definida pelo tipo "passageiros" define todas as propriedades referentes à um passageiro específico. As
-propriedades são passadas durante o 'Realizar Reserva (RR)' e podem ser modificadas ou apagadas em 
-'Modificar Reserva (MR)' e 'Cancelar Reserva (CR)'. Assume-se que nome e sobrenome não são padronizados e por
-isso precisam ser alocados dinamicamente, já CPF e assento são padronizados e por isso são vetores
-estáticos. O booleano classe (bool_classe) define se a pessoa comprou a passagem econômica(0) ou executiva(1).*/
+/*A estrutura definida pelo tipo "passageiros" define todas as propriedades referentes a um passageiro em
+específico. As propriedades são passadas durante o 'Realizar Reserva (RR)' e podem ser modificadas ou apagadas em
+'Modificar Reserva (MR)' e 'Cancelar Reserva (CR)'. Assume-se que nome e sobrenome não são padronizados e por 
+isso precisam ser alocados dinamicamente, já CPF e assento são padronizados e por isso são vetores estáticos, com
+tamanho estendido até o \0 da string. O booleano classe (bool_classe) define se a pessoa comprou a passagem 
+econômica(0) ou executiva(1).*/
 typedef struct{
     char *nome;
     char *sobrenome;
@@ -33,6 +34,7 @@ typedef struct{
 } passageiros;
 
 /* Protótipo das funções*/
+
 /* Funções referentes ao próprio programa (alocação de memória e arquivo)*/
 void *alocarMemoria(int size_vet, int size_type);
 int importarArquivo(passageiros **p, voo *v, int *n_passageiros);
@@ -42,7 +44,6 @@ void freeMemoria(passageiros *p, int n_passageiros);
 /* Funções referentes às funções que podem ser utilizadas pelo usuário (AV, RR, CR, MR, CA, FD, FV)*/
 voo aberturaVoo(void);
 passageiros realizarReserva(voo *v);
-
 void consultarReserva(passageiros *p, voo v, int n_passageiros);
 void modificarReserva(passageiros *p, voo v, int n_passageiros);
 void cancelarReserva(passageiros *p, voo v, int *n_passageiros);
@@ -52,26 +53,37 @@ void fechamentoVoo(passageiros *p, voo v, int n_passageiros);
 /* Funções adjuntas às funções principais executadas pelo usuário*/
 void printarReserva(passageiros p, voo v);
 
+/* Programa Principal */
 int main(void){
+    /* Comando fornecido pelo usuário (AV, RR, CR, MR, CA, FD, FV) */
     char inputComando[3]; 
-    int n_passageiros = 0, bool_primeira;
-    voo viagem = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1}; // Incialização da struct viagem, o estado inicial é "voo não declarado".
+
+    /* Variáveis que determinam o número de passageiros (n_passageiros) e se é a primeira vez que o programa é
+    executado (bool_primeira) */
+    int n_passageiros = 0, bool_primeira; 
+
+    /* Incialização da struct viagem, com o estado inicial descrito como "voo não declarado" */
+    voo viagem = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1}; 
+
+    /* Declaração de um ponteiro para o vetor de structs que, por enquanto, aponta para NULL */
     passageiros *passageiro = NULL;
 
-    // Bool_primeira verifica se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.
+    /* bool_primeira recebe se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.*/
     bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros);
 
-    // A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado.
+    /* A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado. */
     if(viagem.bool_fechado == 1)
         fechamentoVoo(passageiro, viagem, n_passageiros);
 
-    /* O looping abaixo é referente ao funcionamento do programa baseado nos comandos fornecidos pelo usuário. Apesar da condicional do loop
-    ser sempre verdadeira, comandos que encerram o programa (FD e FV) quebram o loop.*/
+    /* O loop abaixo é feito com o comando do-while e, dentro dele, analisamos indeterminadas vezes os comandos 
+    dados pelo usuário. Por mais que a sua condicional seja sempre verdadeira (1), os comandos (FD e FV) e também
+    a verificação para o voo já estar lotado (n_passageiros == viagem.qtdAssentos) quebram o loop (break;) */
     do{
-        scanf("%s", inputComando); // Pede o comando ao usuário
+        /* Pede o comando ao usuário */
+        scanf("%s", inputComando); 
 
-        /* O comando AV só pode ser executado caso o voo esteja não declarado, caso isso não ocorra, o comando de aberturaVoo é chamado 
-        sem nenhum retorno para limpar o buffer do teclado*/
+        /* Comando Abertura de Voo (AV). Ele só pode mudar as informações do voo caso o voo esteja não declarado
+        (-1), caso contrário, o comando é chamado sem retorno, apenas para limpar o buffer do teclado. */
         if(strcmp(inputComando, "AV") == 0){
             if(viagem.bool_fechado == -1){
                 viagem = aberturaVoo();
@@ -82,10 +94,13 @@ int main(void){
                 aberturaVoo();
         }
         
+        /* Comando Consultar Reserva (CR) */
         else if(strcmp(inputComando, "CR") == 0){
             consultarReserva(passageiro, viagem, n_passageiros);
         } 
         
+        /* Comando Realizar Reserva (RR). Há, ainda, a verificação se o voo está aberto (0), caso contrário, o
+        comando é chamado sem nenhum retorno para limpar o buffer do teclado. */
         else if(strcmp(inputComando, "RR") == 0){
             if(viagem.bool_fechado == 0){
                 passageiro[n_passageiros] = realizarReserva(&viagem);
@@ -95,25 +110,30 @@ int main(void){
                 realizarReserva(&viagem);
         }
 
+        /* Comando Modificar Reserva (MR) */
         else if(strcmp(inputComando, "MR") == 0){
             modificarReserva(passageiro, viagem, n_passageiros);
         }
-            
+        
+        /* Comando Cancelar Reserva (CA) */    
         else if(strcmp(inputComando, "CA") == 0){
             cancelarReserva(passageiro, viagem, &n_passageiros);
         }
 
+        /* Comando Fechamento de Voo (FV).  */ 
         else if(strcmp(inputComando, "FV") == 0 || viagem.bool_fechado == 1){
             fechamentoVoo(passageiro, viagem, n_passageiros);
             viagem.bool_fechado = 1;
             break;
         }
 
+        /* Comando Fechamento de Dia (FD) */ 
         else if(strcmp(inputComando, "FD") == 0){
             fechamentoDia(passageiro, viagem, n_passageiros);
             break;
         } 
         
+        /* Verificar se o voo está lotado e fazer fechamento de voo */ 
         if(n_passageiros == viagem.qtdAssentos){
             fechamentoVoo(passageiro, viagem, n_passageiros);
             viagem.bool_fechado = 1;
@@ -122,7 +142,10 @@ int main(void){
 
     } while(1);
 
+    /* Chama a função de exportar os dados do programa para o arquivo binário */ 
     exportarArquivo(passageiro, viagem, n_passageiros);
+
+    /* Desaloca toda a memória dinâmica utilizada */
     freeMemoria(passageiro, n_passageiros);
 
     return 0;
@@ -141,8 +164,8 @@ void *alocarMemoria(int size_vet, int size_type){
     return vet;
 }
 
-/* Essa função é responsável por importar os dados do arquivo para dentro do programa. Caso o arquivo não exista, ele retorna 1 para o 'bool_primeira'
-na main, indicando que o arquivo está sendo aberto pela primeira vez.*/
+/* Essa função é responsável por importar os dados do arquivo para dentro do programa. Caso o arquivo não exista, 
+ele retorna 1 para o 'bool_primeira' na main, indicando que o arquivo está sendo aberto pela primeira vez.*/
 int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
     FILE *fp;
 
