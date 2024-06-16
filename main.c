@@ -1,3 +1,5 @@
+/* Autores: Jhonatan Barboza da Silva, João Gabriel Pieroli da Silva, Pedro Henrique de Souza Prestes */
+/* USP-ICMC BCC024 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -273,6 +275,7 @@ void exportarArquivo(passageiros *p, voo v, int n_passageiros){
     fclose(fp);
     return;
 }
+
 /* Essa função é responsável por efetuar a desalocação da memória da váriavel *p, representando o vetor de structs
 passageiro da main */
 void freeMemoria(passageiros *p, int n_passageiros){
@@ -286,6 +289,10 @@ void freeMemoria(passageiros *p, int n_passageiros){
     p = NULL;
 }
 
+/* Referente ao comando Abertura de Voo (AV), a função é responsável por ler as informações dadas pelo usuário,
+sejam elas, a quantidade de assentos, o valor da passagem econômica e o valor da passagem executiva, de modo a
+retornar a struct obtida a main.
+EXEMPLO DE ENTRADA ESPERADA: AV 25 2000.00 4000.00 */
 voo aberturaVoo(void){
     voo v = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1};
 
@@ -294,55 +301,69 @@ voo aberturaVoo(void){
     return v;
 }
 
+/* Referente ao comando Realizar Reserva (RR), a função é responsável por ler as informações dadas pelo usuário,
+sejam elas, o nome(alocado dinamicamente), o sobrenome(alocado dinamicamente), o CPF, a data, o número do voo, o
+assento, o tipo de passagem, o valor pago na passagem, a origem e o destino, de modo a retornar a struct passageiro
+para uma dada posição, posição esta determinada na main pela quantidade de passageiros.
+EXEMPLO DE ENTRADA ESPERADA: RR Joao Silva 001.001.001-01 02 01 2006 V004 J10 economica 2000.00 CGH RAO */
 passageiros realizarReserva(voo *v){
     passageiros p;
 
-    // Nome
+    /* Nome */
     char nome[100];
     scanf("%s", nome);
     p.nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
     strcpy(p.nome, nome);
 
-    // Sobrenome
+    /* Sobrenome */
     char sobrenome[100];
     scanf("%s", sobrenome);
     p.sobrenome = (char *) alocarMemoria(strlen(sobrenome) + 1, sizeof(char));
     strcpy(p.sobrenome, sobrenome);
 
-    // CPF (tamanho definido)
+    /* CPF (tamanho definido) */
     scanf("%s", p.cpf);
 
-    // Data (tamanho definido) (salva uma única vez)
+    /* Data (tamanho definido). Como esse dado é inváriável, não salvamos ele no vetor de struct passageiros, ele
+    é armazenado na struct viagem da main, aqui representada por *v. Assim, toda vez, ele é sobreescrito */
     scanf(" %10[^\n]s", (*v).data);
     (*v).data[2] = '/';
     (*v).data[5] = '/';
 
-    // Número Voo (salva uma única vez)
+    /* Número de Voo (tamanho definido). Como esse dado é inváriável, não salvamos ele no vetor de struct 
+    passageiros, ele é armazenado na struct viagem da main, aqui representada por *v. Assim, toda vez, ele é
+    sobreescrito */
     scanf("%s", (*v).numero);
 
-    // Assento
+    /* Assento (tamanho definido) */
     scanf("%s", p.assento);
 
-    // Classe
+    /* Classe (Salvo como um booleano: 0 para econômica e 1 para executiva) */
     char classe[10];
     scanf("%s", classe);
     if(strcmp(classe, "economica") == 0) p.bool_classe = 0;
     if(strcmp(classe, "executiva") == 0) p.bool_classe = 1;
 
-    // Valor (não salva)
+    /* Valor (Não precisamos salvar essa informação, visto que já temos ela com a abertura de voo) */
     float valor;
     scanf("%f", &valor);
 
-    // Origem e Destino (salva uma única vez)
+    /* Origem e Destino (tamanho definido). Como esse dado é inváriável, não salvamos ele no vetor de struct 
+    passageiros, ele é armazenado na struct viagem da main, aqui representada por *v. Assim, toda vez, ele é
+    sobreescrito*/
     scanf("%s", (*v).origem);
     scanf("%s", (*v).destino);
 
     return p;
 }
 
+/* Referente ao comando Consultar Reserva (CR), a função é responsável por procurar o CPF fornecido pelo usuário
+no elemento cpf de cada posição do vetor de struct passageiros, chamando a função para printar a reserva.
+EXEMPLO DE ENTRADA ESPERADA: CR 001.001.001-01 */
 void consultarReserva(passageiros *p, voo v, int n_passageiros){
     char checkCPF[15];
     
+    /* CPF fornecido */
     scanf("%s", checkCPF);
 
     for(int i=0; i < n_passageiros; i++){
@@ -354,26 +375,36 @@ void consultarReserva(passageiros *p, voo v, int n_passageiros){
     return;
 }
 
+/* Referente ao comando Modificar Reserva (MR), a função é responsável por procurar, desde que o voo ainda esteja
+aberto (0), o CPF fornecido pelo usuário no elemento cpf de cada posição do vetor de struct passageiros, a fim de
+trocar as informações de nome, sobrenome, cpf e assento de antes pelas novas digitadas pelo usuário.
+EXEMPLO DE ENTRADA ESPERADA: MR 000.000.000-00 Leonardo Davinci 000.000.000-01 D30 */
 void modificarReserva(passageiros *p, voo v, int n_passageiros){
+
+    /* CPF fornecido */
     char checkCPF[15];
     scanf("%s", checkCPF);
 
+    /* Novo Nome */
     char nome[100];
     scanf("%s", nome);
 
+    /* Novo Sobrenome */
     char sobrenome[100];
     scanf("%s", sobrenome);
 
+    /* Novo CPF */
     char cpf[15];
     scanf("%s", cpf);
 
+    /* Novo Assento */
     char assento[4];
     scanf("%s", assento);
 
     if(v.bool_fechado == 0)
         for(int i=0; i < n_passageiros; i++){
             if(strcmp(p[i].cpf, checkCPF) == 0){
-                // Todos os dados são reatribuídos.
+                /* Todos os dados são reatribuídos */
                 free(p[i].nome);
                 p[i].nome = NULL;
                 p[i].nome = (char *) alocarMemoria(strlen(nome) + 1, sizeof(char));
@@ -398,15 +429,26 @@ void modificarReserva(passageiros *p, voo v, int n_passageiros){
     return;
 }
 
+/* Referente ao comando Cancelar Reserva (CA), a função é responsável por procurar, desde que o voo ainda esteja
+aberto (0), o CPF fornecido pelo usuário no elemento cpf de cada posição do vetor de struct passageiros, a fim de
+limpar os dados guardados dessa reserva. A partir da struct que continha esse cpf, as próximas structs serão
+reposicionadas uma posição para trás. Além disso, é decrementado em 1 o número de passageiros. Todo esse processo
+é feito por meio de uma variável que funciona como um booleano para saber se coincidiu o CPF fornecido com aquele
+de alguma das reservas.
+EXEMPLO DE ENTRADA ESPERADA: CA 001.001.001-01 */
 void cancelarReserva(passageiros *p, voo v, int *n_passageiros){
-    char checkCPF[15];
+
+    /* Variável controle (houve ou não cancelamento)*/
     int bool_mover = 0;
-    
+
+    /* CPF fornecido */
+    char checkCPF[15];    
     scanf("%s", checkCPF);
 
+    /* Se o voo ainda está aberto, percorre todos os CPFs das reservas. Caso encontre um igual, limpa os dados da
+    pessoa, como nome e sobrenome, e as próximas structs são passadas uma posição para trás */
     if(v.bool_fechado == 0){
         for(int i=0; i < (*n_passageiros); i++){
-
             if(strcmp(p[i].cpf, checkCPF) == 0){
                 bool_mover = 1;
                 free(p[i].nome);
@@ -426,9 +468,19 @@ void cancelarReserva(passageiros *p, voo v, int *n_passageiros){
     return;
 }
 
+/* Referente ao comando Fechamento do Dia (FD), a função é responsável por fazer a soma segundo o valor booleano
+armazenado no elemento bool_classe de cada posição do vetor de structs passageiro, aqui representado por p. É
+sábido que para bool_classe, 0 representa econômica e 1, executiva. Sendo assim, basta que somemos o valor da
+ecônomica (guardado na struct viagem, aqui representada por v) e o valor da passagem executiva (guardado na
+struct viagem, aqui representada por v) à soma total conforme percorremos o vetor de structs.
+EXEMPLO DE ENTRADA ESPERADA: FD */
 void fechamentoDia(passageiros *p, voo v, int n_passageiros){
+
+    /* A variável receitaDiaria representa o resultado da soma, por isso, é inicializada como 0*/
     float receitaDiaria = 0; 
 
+    /* Percorremos o vetor de structs analisando o elemento bool_classe, conforme o que achamos,(0) somamos 
+    v.valEco (valor da passagem econômica) ou (1) somamos v.valExe (valor da passagem executiva)*/
     for (int i=0; i < n_passageiros; i++){
         if (p[i].bool_classe == 0){
             receitaDiaria += v.valEco; 
@@ -438,14 +490,23 @@ void fechamentoDia(passageiros *p, voo v, int n_passageiros){
         }
     }
 
+    /* Imprime a saída de forma formatada conforme o caso teste */
     printf("Fechamento do dia:\nQuantidade de reservas: %d\nPosição: %.2f\n--------------------------------------------------\n", n_passageiros, receitaDiaria);
 
     return;
 }
 
+/* Referente ao comando Fechamento do Voo (FV), a função é responsável por mostrar os dados requeridos para quando
+o voo for fechado, sejam eles, o CPF, o nome, o sobrenome e o assento de cada um dos passageiros e o lucro total
+obtido com as reservas. 
+EXEMPLO DE ENTRADA ESPERADA: FV */
 void fechamentoVoo(passageiros *p, voo v, int n_passageiros){
     float receitaTotal = 0; 
 
+    /* Percorremos todo o vetor de structs printando as informações na ordem descrita: o CPF, o nome, o sobrenome
+    e o assento de cada um dos passageiros. Assim como no fechamento de dia, a soma é dada analisando o elemento
+    bool_classe. Conforme o que achamos,(0) somamos v.valEco (valor da passagem econômica) ou (1) somamos v.valExe
+    (valor da passagem executiva) */
     printf("Voo Fechado!\n\n");
     for (int i = 0; i < n_passageiros; i++) {
         printf("%s\n%s %s\n%s\n\n", p[i].cpf, p[i].nome, p[i].sobrenome, p[i].assento);
@@ -455,30 +516,41 @@ void fechamentoVoo(passageiros *p, voo v, int n_passageiros){
         else
             receitaTotal += v.valExe;
     }
-
+    /* Imprime a soma total e os hífens conforme o caso teste */
     printf("Valor Total: %.2f\n--------------------------------------------------\n", receitaTotal);
 
     return;
 }
 
+/* A função "printarReserva" é responsável por mostrar os dados requeridos por comandos como Consultar Reserva (CR)
+e Modificar Reserva (MR), que têm uma saída padronizada do tipo:
+<CPF>
+<nome>_<sobrenome>
+<data viagem>
+Voo:_<número do voo>
+Assento:_<assento>
+Classe:_<classe>
+Trecho:_<origem>_<destino>
+Valor:_<valor>
+*/
 void printarReserva(passageiros p, voo v){
 
-    // Printar CPF
+    /* Printar CPF */
     printf("%s\n", p.cpf);
 
-    // Printar Nome e Sobrenome
+    /* Printar Nome e Sobrenome */
     printf("%s %s\n", p.nome, p.sobrenome);
 
-    // Printar data
+    /* Printar data */
     printf("%s\n", v.data);
 
-    // Printar numero voo
+    /* Printar número de voo */
     printf("Voo: %s\n", v.numero);
 
-    // Printar assento
+    /* Printar assento */
     printf("Assento: %s\n", p.assento);
 
-    // Printar classe e valor baseado no booleano bool_classe (1=Executiva e 0=Econômica)
+    /* Printar classe e valor baseado no booleano bool_classe (1=Executiva e 0=Econômica) */
     if(p.bool_classe){
         printf("Classe: executiva\n");
         printf("Trecho: %s %s\n", v.origem, v.destino);
@@ -488,36 +560,9 @@ void printarReserva(passageiros p, voo v){
         printf("Trecho: %s %s\n", v.origem, v.destino);
         printf("Valor: %.2f\n", v.valEco);
     }
-
+    /* Imprime os hífens conforme o caso teste */
     printf("--------------------------------------------------\n");
     return;
 }
   
 
-
-/* Casos testes
-AV 200 1200.00 2500.00
-RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
-RR Maria Massa 444.555.333-93 12 12 2024 V001 A31 economica 1200.00 CGH RAO
-RR Roberto Carlos 555.333.333-89 12 12 2024 V001 P12 executiva 2500.00 CGH RAO
-MR 555.555.333-99 Carlos Massa 555.555.333-99 A30   
-CA 444.555.333-93
-CA 555.555.333-99
-CA 555.333.333-89
-FD
-*/
-
-/*Caso teste do PDF
-AV 200 1200.00 2500.00
-RR Carlos Massa 555.555.333-99 12 12 2024 V001 A27 economica 1200.00 CGH RAO
-RR Maria Massa 444.555.333-93 12 12 2024 V001 A31 economica 1200.00 CGH RAO
-RR Roberto Carlos 555.333.333-89 12 12 2024 V001 P12 executiva 2500.00 CGH RAO
-MR 555.555.333-99 Carlos Massa 555.555.333-99 A30
-FD
-
-RR Euclides Simon 222.111.333-12 12 12 2024 V001 B01 economica 1200.00 CGH RAO
-RR Marta Rocha 999.888.222-21 12 12 2024 V001 C02 executiva 2500.00 CGH RAO
-CR 555.333.333-89
-RR Clara Nunes 111.000.123-45 12 12 2024 V001 C09 executiva 2500.00 CGH RAO
-FV
-*/
