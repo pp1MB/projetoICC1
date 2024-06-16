@@ -44,7 +44,7 @@ typedef struct{
 
 /* Funções referentes ao próprio programa (alocação de memória e arquivo)*/
 void *alocarMemoria(int size_vet, int size_type);
-int importarArquivo(passageiros **p, voo *v, int *n_passageiros);
+void importarArquivo(passageiros **p, voo *v, int *n_passageiros);
 void exportarArquivo(passageiros *p, voo v, int n_passageiros);
 void freeMemoria(passageiros *p, int n_passageiros);
 
@@ -67,16 +67,19 @@ int main(void){
 
     /* Variáveis que determinam o número de passageiros (n_passageiros) e se é a primeira vez que o programa é
     executado (bool_primeira) */
-    int n_passageiros = 0, bool_primeira, memoria = 0; 
+    int n_passageiros = 0, memoria = 0; 
 
     /* Incialização da struct viagem, com o estado inicial descrito como "voo não declarado" */
-    voo viagem = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1}; 
+    voo viagem;
+    viagem.bool_fechado = -1;
 
     /* Declaração de um ponteiro para o vetor de structs que, por enquanto, aponta para NULL */
     passageiros *passageiro = NULL;
 
     /* bool_primeira recebe se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.*/
-    if(!(bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros))){
+    importarArquivo(&passageiro, &viagem, &n_passageiros);
+    
+    if(viagem.bool_fechado != -1){
         if(n_passageiros + 20 < viagem.qtdAssentos)
             memoria = n_passageiros + 20;
         else
@@ -100,14 +103,12 @@ int main(void){
             if(viagem.bool_fechado == -1){
                 viagem = aberturaVoo();
                 viagem.bool_fechado = 0;
-                if(bool_primeira){
-                    if(n_passageiros + 20 < viagem.qtdAssentos)
-                        memoria = n_passageiros + 20;
-                    else
-                        memoria = viagem.qtdAssentos;
-                        
-                    passageiro = (passageiros *) alocarMemoria(memoria, sizeof(passageiros));
-                }
+                if(n_passageiros + 20 < viagem.qtdAssentos)
+                    memoria = n_passageiros + 20;
+                else
+                    memoria = viagem.qtdAssentos;
+                    
+                passageiro = (passageiros *) alocarMemoria(memoria, sizeof(passageiros));
             } else 
                 aberturaVoo();
         }
@@ -167,11 +168,13 @@ int main(void){
 
     } while(1);
 
-    /* Chama a função de exportar os dados do programa para o arquivo binário */ 
-    exportarArquivo(passageiro, viagem, n_passageiros);
+    if(viagem.bool_fechado != -1){
+        /* Chama a função de exportar os dados do programa para o arquivo binário */
+        exportarArquivo(passageiro, viagem, n_passageiros);
 
-    /* Desaloca toda a memória dinâmica utilizada */
-    freeMemoria(passageiro, n_passageiros);
+        /* Desaloca toda a memória dinâmica utilizada */
+        freeMemoria(passageiro, n_passageiros);
+    }
 
     return 0;
 }
@@ -193,11 +196,11 @@ void *alocarMemoria(int size_vet, int size_type){
 /* Essa função é responsável por importar os dados do arquivo para dentro do programa. Caso o arquivo não exista,
 ele retorna 1 para o 'bool_primeira' na main, indicando que o arquivo está sendo aberto pela primeira vez. Sempre
 que existir, vamos ler tudo que temos lá. */
-int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
+void importarArquivo(passageiros **p, voo *v, int *n_passageiros){
     FILE *fp;
 
     if ((fp = fopen("arquivo.bin", "rb")) == NULL)
-        return 1;
+        return;
     else {
 
         /* Primeiramente, lemos o número de passageiros e, em seguida, os dados da struct viagem, aqui representada
@@ -248,7 +251,7 @@ int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
     }
     fclose(fp);
 
-    return 0;
+    return;
 }
 
 /* Essa função é responsável por exportar os dados do programa para dentro do arquivo. Caso ele não consiga abrir
