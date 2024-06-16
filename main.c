@@ -11,7 +11,7 @@ um modelo específico e por isso são vetores estáticos, com tamanho estendido 
 fechado (bool_fechado), embora tenha o nome bool, na verdade é uma variável de controle com 3 estados possíveis:
 voo não declarado (-1), voo aberto (0) e voo fechado (1)*/
 typedef struct{
-    int qtdAssentos;z
+    int qtdAssentos;
     float valEco;
     float valExe;
     char data[11];
@@ -62,7 +62,7 @@ int main(void){
 
     /* Variáveis que determinam o número de passageiros (n_passageiros) e se é a primeira vez que o programa é
     executado (bool_primeira) */
-    int n_passageiros = 0, bool_primeira; 
+    int n_passageiros = 0, bool_primeira, memoria; 
 
     /* Incialização da struct viagem, com o estado inicial descrito como "voo não declarado" */
     voo viagem = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1}; 
@@ -72,8 +72,9 @@ int main(void){
 
     /* bool_primeira recebe se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.*/
     bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros);
+    memoria = n_passageiros + 20;
 
-    /* A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado. */
+    /* A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado, porém não fecha o programa. */
     if(viagem.bool_fechado == 1)
         fechamentoVoo(passageiro, viagem, n_passageiros);
 
@@ -91,7 +92,7 @@ int main(void){
                 viagem = aberturaVoo();
                 viagem.bool_fechado = 0;
                 if(bool_primeira)
-                    passageiro = (passageiros *) alocarMemoria(viagem.qtdAssentos, sizeof(passageiros));
+                    passageiro = (passageiros *) alocarMemoria(memoria, sizeof(passageiros));
             } else 
                 aberturaVoo();
         }
@@ -107,6 +108,13 @@ int main(void){
             if(viagem.bool_fechado == 0){
                 passageiro[n_passageiros] = realizarReserva(&viagem);
                 n_passageiros++;
+                if(memoria == n_passageiros){
+                    if(memoria + 20 < viagem.qtdAssentos){
+                        memoria += 20;
+                        passageiro = realloc(passageiro, memoria * sizeof(passageiro));
+                    } else
+                        passageiro = realloc(passageiro, viagem.qtdAssentos * sizeof(passageiro));
+                }
             }
             else
                 realizarReserva(&viagem);
@@ -190,7 +198,10 @@ int importarArquivo(passageiros **p, voo *v, int *n_passageiros){
         fread((*v).destino, sizeof(char), 4, fp);
         fread(&(*v).bool_fechado, sizeof(int), 1, fp);
 
-        *p = (passageiros *) alocarMemoria((*v).qtdAssentos, sizeof(passageiros));
+        if(*n_passageiros + 20 < (*v).qtdAssentos)
+            *p = (passageiros *) alocarMemoria(*n_passageiros + 20, sizeof(passageiros));
+        else
+            *p = (passageiros *) alocarMemoria((*v).qtdAssentos, sizeof(passageiros));
 
         /* Já para o vetor de structs, é preciso ler o tamanho de cada nome e sobrenome (salvos no arquivo) antes
         de efetivamente fazermos a sua leitura, pois fazemos alocação dinâmica. Depois, temos outros dados de
