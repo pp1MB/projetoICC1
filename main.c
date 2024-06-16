@@ -76,11 +76,12 @@ int main(void){
     passageiros *passageiro = NULL;
 
     /* bool_primeira recebe se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.*/
-    if(!(bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros)))
+    if(!(bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros))){
         if(n_passageiros + 20 < viagem.qtdAssentos)
             memoria = n_passageiros + 20;
         else
             memoria = viagem.qtdAssentos;
+    }
 
     /* A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado, porém não fecha o programa. */
     if(viagem.bool_fechado == 1)
