@@ -146,7 +146,7 @@ int main(void){
         }
 
         /* Comando Fechamento de Voo (FV).  */ 
-        else if(strcmp(inputComando, "FV") == 0 || viagem.bool_fechado == 1){
+        else if((strcmp(inputComando, "FV") == 0 && viagem.bool_fechado == 0) || viagem.bool_fechado == 1){
             fechamentoVoo(passageiro, viagem, n_passageiros);
             viagem.bool_fechado = 1;
             break;
