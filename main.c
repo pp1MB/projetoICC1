@@ -9,7 +9,7 @@ um modelo específico e por isso são vetores estáticos, com tamanho estendido 
 fechado (bool_fechado), embora tenha o nome bool, na verdade é uma variável de controle com 3 estados possíveis:
 voo não declarado (-1), voo aberto (0) e voo fechado (1)*/
 typedef struct{
-    int qtdAssentos;
+    int qtdAssentos;z
     float valEco;
     float valExe;
     char data[11];
