@@ -1,5 +1,10 @@
-/* Autores: Jhonatan Barboza da Silva, João Gabriel Pieroli da Silva, Pedro Henrique de Souza Prestes */
-/* USP-ICMC BCC024 */
+/* 
+Trabalho de Introdução à Ciência da Computação I - USP / ICMC / BCC (2024)
+Professor: Rudinei Goularte
+Autores: 
+- Jhonatan Barboza da Silva
+- João Gabriel Pieroli da Silva, 
+- Pedro Henrique de SouSa Prestes, 15507819 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +67,7 @@ int main(void){
 
     /* Variáveis que determinam o número de passageiros (n_passageiros) e se é a primeira vez que o programa é
     executado (bool_primeira) */
-    int n_passageiros = 0, bool_primeira, memoria; 
+    int n_passageiros = 0, bool_primeira, memoria = 0; 
 
     /* Incialização da struct viagem, com o estado inicial descrito como "voo não declarado" */
     voo viagem = {0, 0.0, 0.0, "XX/XX/XX", "VXXX", "XXX", "XXX", -1}; 
@@ -71,8 +76,11 @@ int main(void){
     passageiros *passageiro = NULL;
 
     /* bool_primeira recebe se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.*/
-    bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros);
-    memoria = n_passageiros + 20;
+    if(!(bool_primeira = importarArquivo(&passageiro, &viagem, &n_passageiros)))
+        if(n_passageiros + 20 < viagem.qtdAssentos)
+            memoria = n_passageiros + 20;
+        else
+            memoria = viagem.qtdAssentos;
 
     /* A mensagem de fechamento de voo aparece todo começo de programa caso o voo esteja fechado, porém não fecha o programa. */
     if(viagem.bool_fechado == 1)
@@ -91,8 +99,14 @@ int main(void){
             if(viagem.bool_fechado == -1){
                 viagem = aberturaVoo();
                 viagem.bool_fechado = 0;
-                if(bool_primeira)
+                if(bool_primeira){
+                    if(n_passageiros + 20 < viagem.qtdAssentos)
+                        memoria = n_passageiros + 20;
+                    else
+                        memoria = viagem.qtdAssentos;
+                        
                     passageiro = (passageiros *) alocarMemoria(memoria, sizeof(passageiros));
+                }
             } else 
                 aberturaVoo();
         }
@@ -111,9 +125,9 @@ int main(void){
                 if(memoria == n_passageiros){
                     if(memoria + 20 < viagem.qtdAssentos){
                         memoria += 20;
-                        passageiro = realloc(passageiro, memoria * sizeof(passageiro));
+                        passageiro = realloc(passageiro, memoria * sizeof(passageiros));
                     } else
-                        passageiro = realloc(passageiro, viagem.qtdAssentos * sizeof(passageiro));
+                        passageiro = realloc(passageiro, viagem.qtdAssentos * sizeof(passageiros));
                 }
             }
             else
@@ -144,7 +158,7 @@ int main(void){
         } 
         
         /* Verificar se o voo está lotado e fazer fechamento de voo */ 
-        if(n_passageiros == viagem.qtdAssentos){
+        if(n_passageiros == viagem.qtdAssentos && viagem.bool_fechado == 0){
             fechamentoVoo(passageiro, viagem, n_passageiros);
             viagem.bool_fechado = 1;
             break;
@@ -575,5 +589,3 @@ void printarReserva(passageiros p, voo v){
     printf("--------------------------------------------------\n");
     return;
 }
-  
-
