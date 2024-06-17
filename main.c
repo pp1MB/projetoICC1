@@ -76,9 +76,10 @@ int main(void){
     /* Declaração de um ponteiro para o vetor de structs que, por enquanto, aponta para NULL */
     passageiros *passageiro = NULL;
 
-    /* bool_primeira recebe se o arquivo está sendo aberto pela primeira vez para fins de alocação de memória.*/
+    /* O arquivo, se existir, é importado para o programa.*/
     importarArquivo(&passageiro, &viagem, &n_passageiros);
     
+    /* Se o voo não estiver fechado, a alocação de memória é baseada nas informações do arquivo.*/
     if(viagem.bool_fechado != -1){
         if(n_passageiros + 20 < viagem.qtdAssentos)
             memoria = n_passageiros + 20;
@@ -102,9 +103,12 @@ int main(void){
         if(strcmp(inputComando, "AV") == 0){
             if(viagem.bool_fechado == -1){
                 viagem = aberturaVoo();
-                viagem.bool_fechado = 0;
-                if(n_passageiros + 20 < viagem.qtdAssentos)
-                    memoria = n_passageiros + 20;
+                /*Voo marcado como aberto.*/
+                viagem.bool_fechado = 0; 
+
+                /* Se o voo for aberto, a alocação de memória é feita baseada em qtdAssentos, alocando 20 passageiros pro vez.*/
+                if(viagem.qtdAssentos > 20)
+                    memoria = 20;
                 else
                     memoria = viagem.qtdAssentos;
                     
